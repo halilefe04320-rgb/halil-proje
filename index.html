@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ekonomik Simülasyon Oyunu • Beşeri ve Ekonomik Faktörler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500&display=swap');
+        
+        :root {
+            --tw-color-primary: #10b981;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .title-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .header-gradient {
+            background: linear-gradient(90deg, #10b981, #22c55e);
+        }
+
+        .card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2);
+        }
+
+        .progress-bar {
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .log-entry {
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-number {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen">
+    <div class="max-w-[90rem] mx-auto p-6">
+        <div class="header-gradient rounded-3xl px-8 py-5 mb-8 shadow-2xl flex flex-wrap gap-6 items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl">📊</div>
+                <div>
+                    <h1 class="title-font text-3xl font-semibold tracking-tighter">BEŞERİ FAKTÖRLER</h1>
+                    <p class="text-white/90 text-sm">Ekonomik Faaliyet Simülasyonu</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-8 md:gap-12">
+                <div class="text-center">
+                    <div class="text-white/70 text-xs font-medium tracking-widest mb-1">BÜTÇE</div>
+                    <div class="flex items-baseline justify-center gap-1">
+                        <div id="budget-display" class="text-4xl md:text-5xl font-semibold text-white stat-number">10.000</div>
+                        <div class="text-emerald-200 text-sm font-bold">TL</div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <div class="text-white/70 text-xs font-medium tracking-widest mb-1">ÜRETİM KAPASİTESİ</div>
+                    <div class="flex items-baseline justify-center gap-1">
+                        <div id="capacity-display" class="text-4xl md:text-5xl font-semibold text-white stat-number">100</div>
+                        <div class="text-emerald-200 text-sm">br/tur</div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <div class="text-white/70 text-xs font-medium tracking-widest mb-1">TUR</div>
+                    <div id="turn-display" class="text-4xl md:text-5xl font-semibold text-white stat-number">1</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSimulation()" 
+                        id="pause-btn"
+                        class="bg-white/10 hover:bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl font-medium flex items-center gap-2 transition-all">
+                    <span id="pause-text">⏸️ Durdur</span>
+                </button>
+                
+                <div onclick="resetGame()" 
+                     class="cursor-pointer text-white/60 hover:text-white flex items-center gap-1 text-sm transition-colors">
+                    <span>🔄</span>
+                    <span>Sıfırla</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            
+            <div class="xl:col-span-8">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <span>💰</span>
+                    YATIRIM YAPILABİLECEK FAKTÖRLER
+                </h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="investment-grid">
+                    </div>
+            </div>
+
+            <div class="xl:col-span-4 bg-slate-900 rounded-3xl p-6 border border-white/10 flex flex-col h-[600px]">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <span>📜</span>
+                        OLAY GÜNLÜĞÜ
+                    </h2>
+                    <button onclick="clearLog()" 
+                            class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1 rounded-xl text-white/70 transition-colors">
+                        Temizle
+                    </button>
+                </div>
+                
+                <div id="log-container" 
+                     class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                    </div>
+                
+                <div class="mt-6 text-xs text-white/50 flex items-center gap-2">
+                    <div class="flex-1 h-px bg-white/10"></div>
+                    Simülasyon her 4 saniyede bir tur atar
+                    <div class="flex-1 h-px bg-white/10"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-white/40 text-xs flex flex-wrap items-center justify-center gap-4 md:gap-8">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+                CANLI SİMÜLASYON
+            </div>
+            <div>• Eğitim + Teknoloji = Yüksek Verim</div>
+            <div>• Ar-Ge birim başına kârı artırır</div>
+            <div>• Turizm üretime bağlı kalmadan pasif gelir sağlar</div>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script (CDN için ayar)
+        function initializeTailwind() {
+            return {
+                theme: { extend: {} },
+            }
+        }
+        
+        // Oyun değişkenleri
+        let budget = 10000;
+        let turn = 1;
+        let isRunning = true;
+        let simulationInterval = null;
+        
+        // Tailwind JIT derleyicisinin renkleri yakalayabilmesi için tam sınıf adları eklendi
+        let factors = {
+            egitim: {
+                name: "Eğitim",
+                icon: "🎓",
+                desc: "İş gücü kalitesini artırır.",
+                level: 0,
+                nextCost: 2000,
+                styles: { text: "text-emerald-400", bg: "bg-emerald-400", hoverBg: "hover:bg-emerald-400", border: "hover:border-emerald-400", gradient: "from-emerald-400 to-emerald-500" }
+            },
+            ulasim: {
+                name: "Ulaşım",
+                icon: "🚚",
+                desc: "Teslimat oranını yükseltir.",
+                level: 0,
+                nextCost: 2000,
+                styles: { text: "text-blue-400", bg: "bg-blue-400", hoverBg: "hover:bg-blue-400", border: "hover:border-blue-400", gradient: "from-blue-400 to-blue-500" }
+            },
+            teknoloji: {
+                name: "Teknoloji",
+                icon: "💻",
+                desc: "Üretim hızını katlar.",
+                level: 0,
+                nextCost: 2000,
+                styles: { text: "text-violet-400", bg: "bg-violet-400", hoverBg: "hover:bg-violet-400", border: "hover:border-violet-400", gradient: "from-violet-400 to-violet-500" }
+            },
+            pazarlama: {
+                name: "Pazarlama",
+                icon: "📣",
+                desc: "Temel satış oranını artırır.",
+                level: 0,
+                nextCost: 2000,
+                styles: { text: "text-amber-400", bg: "bg-amber-400", hoverBg: "hover:bg-amber-400", border: "hover:border-amber-400", gradient: "from-amber-400 to-amber-500" }
+            },
+            arge: {
+                name: "Ar-Ge",
+                icon: "🔬",
+                desc: "Ürün değerini ve kârı artırır.",
+                level: 0,
+                nextCost: 2500,
+                styles: { text: "text-fuchsia-400", bg: "bg-fuchsia-400", hoverBg: "hover:bg-fuchsia-400", border: "hover:border-fuchsia-400", gradient: "from-fuchsia-400 to-fuchsia-500" }
+            },
+            saglik: {
+                name: "Sağlık",
+                icon: "🏥",
+                desc: "İş gücü verimliliğini korur.",
+                level: 0,
+                nextCost: 1500,
+                styles: { text: "text-rose-400", bg: "bg-rose-400", hoverBg: "hover:bg-rose-400", border: "hover:border-rose-400", gradient: "from-rose-400 to-rose-500" }
+            },
+            iletisim: {
+                name: "İletişim",
+                icon: "📡",
+                desc: "Satış potansiyelini genişletir.",
+                level: 0,
+                nextCost: 1800,
+                styles: { text: "text-orange-400", bg: "bg-orange-400", hoverBg: "hover:bg-orange-400", border: "hover:border-orange-400", gradient: "from-orange-400 to-orange-500" }
+            },
+            turizm: {
+                name: "Turizm",
+                icon: "✈️",
+                desc: "Şehre pasif gelir sağlar.",
+                level: 0,
+                nextCost: 3000,
+                styles: { text: "text-cyan-400", bg: "bg-cyan-400", hoverBg: "hover:bg-cyan-400", border: "hover:border-cyan-400", gradient: "from-cyan-400 to-cyan-500" }
+            }
+        };
+        
+        // Kapasite hesaplama (Teknoloji doğrudan etkiler)
+        function getCurrentCapacity() {
+            return Math.floor(100 * Math.pow(1.18, factors.teknoloji.level));
+        }
+        
+        // Eğitim çarpanı
+        function getEducationMultiplier() {
+            return 1 + (0.28 * factors.egitim.level);
+        }
+        
+        // Teknoloji verimlilik kontrolü (Teknoloji + Eğitim dengesi)
+        function getTechEfficiency() {
+            const t = factors.teknoloji.level;
+            const e = factors.egitim.level;
+            if (t === 0) return 1;
+            const fark = t - e;
+            if (fark <= 2) return 1.0;
+            return Math.max(0.48, 1 - (0.13 * (fark - 2)));
+        }
+
+        // Sağlık çarpanı (Üretimi doğrudan destekler)
+        function getHealthMultiplier() {
+            return 1 + (0.10 * factors.saglik.level);
+        }
+        
+        // Satış oranı (Pazarlama + İletişim)
+        function getSalesRate() {
+            // İletişim, pazarlamanın sınırlarını aşmasını sağlar
+            let base = 0.48 + (0.13 * factors.pazarlama.level) + (0.07 * factors.iletisim.level);
+            return Math.min(1.25, base); // %125'e kadar (Ön sipariş / yüksek talep)
+        }
+        
+        // Teslimat oranı (Ulaşım)
+        function getDeliveryRate(produced) {
+            let base = 0.45 + (0.19 * factors.ulasim.level);
+            // Üretim yüksekse ve ulaşım zayıfsa ekstra ceza
+            if (produced > 200 && factors.ulasim.level < 4) {
+                base *= 0.75;
+            }
+            return Math.min(1, base);
+        }
+        
+        // Tek bir tur simüle et
+        function simulateTurn() {
+            if (!isRunning) return;
+            
+            const capacity = getCurrentCapacity();
+            const eduMult = getEducationMultiplier();
+            const techEff = getTechEfficiency();
+            const healthMult = getHealthMultiplier();
+            
+            // Üretim hesabı
+            let unitsProduced = Math.floor(capacity * eduMult * techEff * healthMult);
+            
+            // Satış ve Teslimat
+            const salesRate = getSalesRate();
+            let potentialSold = Math.floor(unitsProduced * salesRate);
+            
+            const deliveryRate = getDeliveryRate(unitsProduced);
+            let unitsSold = Math.floor(potentialSold * deliveryRate);
+            
+            // Ar-Ge temel kârı artırır (Önceden sabit 98'di)
+            const baseProfit = 98 + (factors.arge.level * 25);
+            const transportBonus = 1 + (0.24 * factors.ulasim.level);
+            
+            // Üretim Geliri
+            let revenue = Math.floor(unitsSold * baseProfit * transportBonus);
+            
+            // Turizm Geliri (Pasif)
+            let tourismIncome = 0;
+            if (factors.turizm.level > 0) {
+                // İletişim ve ulaşım, turizmi pozitif etkiler
+                tourismIncome = factors.turizm.level * 500 * (1 + (factors.iletisim.level * 0.1) + (factors.ulasim.level * 0.1));
+                revenue += Math.floor(tourismIncome);
+            }
+            
+            // Olay günlüğü mesajları
+            let messages = [];
+            
+            let turnMsg = `🟢 Tur ${turn}: ${unitsProduced} üretildi • ${unitsSold} satıldı • +${revenue.toLocaleString('tr-TR')} TL`;
+            if (tourismIncome > 0) turnMsg += ` (Turizm: +${Math.floor(tourismIncome).toLocaleString('tr-TR')} TL)`;
+            messages.push(turnMsg);
+            
+            // Uyarılar
+            if (techEff < 0.95) {
+                messages.push(`⚠️ DÜŞÜK VERİM: Teknoloji, kalifiye personel (Eğitim) eksikliği nedeniyle verimsiz çalışıyor!`);
+            }
+            if (deliveryRate < 0.85 && potentialSold > 80) {
+                messages.push(`🚧 ULAŞIM YETERSİZ: Ürünlerin bir kısmı lojistik ağ yetersizliğinden pazara ulaşamadı.`);
+            }
+            
+            // Rastgele olaylar (%25 şans)
+            if (Math.random() < 0.25) {
+                const randomEvents = [
+                    {
+                        msg: "📈 Piyasa talebi patlaması! İletişim ve pazarlama ağı ekstra %20 gelir sağladı.",
+                        effect: () => { revenue = Math.floor(revenue * 1.20); }
+                    },
+                    {
+                        msg: "📉 Küresel kriz: Hammadde maliyetleri yükseldi, kâr marjı %15 düştü.",
+                        effect: () => { revenue = Math.floor(revenue * 0.85); }
+                    },
+                    {
+                        msg: "🔬 Ar-Ge atılımı! Yeni bir patent şirkete ekstra prestij ve gelir getirdi.",
+                        effect: () => { revenue = Math.floor(revenue * 1.30); }
+                    },
+                    {
+                        msg: "🏥 Salgın hastalık riski! Sağlık yatırımları sayesinde iş gücü kaybı önlendi.",
+                        effect: () => { /* Sadece mesaj */ }
+                    },
+                    {
+                        msg: "✈️ Uluslararası festival! Turizm gelirleri bu tur için ikiye katlandı.",
+                        effect: () => { if (tourismIncome > 0) revenue += Math.floor(tourismIncome); }
+                    }
+                ];
+                const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+                messages.push(event.msg);
+                event.effect();
+            }
+            
+            // Bütçeyi güncelle
+            budget += revenue;
+            if (budget < 0) budget = 0;
+            
+            // Günlüğe yaz
+            messages.forEach(msg => addToLog(msg));
+            
+            // Ekranı güncelle
+            turn++;
+            updateAllDisplays();
+        }
+        
+        // Yatırım yap
+        function makeInvestment(key) {
+            const factor = factors[key];
+            if (!factor) return;
+            
+            if (budget < factor.nextCost) {
+                addToLog(`❌ Yetersiz bütçe! ${factor.name} için ${factor.nextCost.toLocaleString('tr-TR')} TL gerekiyor.`);
+                return;
+            }
+            
+            // Yatırım uygula
+            budget -= factor.nextCost;
+            factor.level++;
+            
+            // Maliyet artışı (Her yatırım bir öncekinden %25 daha pahalı)
+            factor.nextCost = Math.floor(factor.nextCost * 1.25);
+            
+            // Özel mesajlar
+            if (key === "teknoloji") {
+                addToLog(`🚀 Teknoloji yatırımı yapıldı! Kapasite artışı sağlandı. Eğitim durumunu kontrol etmeyi unutmayın.`);
+            } else if (key === "turizm" && factor.level === 1) {
+                addToLog(`✈️ Şehir turizme açıldı! Artık üretimden bağımsız düzenli pasif gelir elde edeceksiniz.`);
+            } else {
+                addToLog(`✅ ${factor.icon} ${factor.name} faktörü Seviye ${factor.level}'e yükseltildi.`);
+            }
+            
+            updateAllDisplays();
+        }
+        
+        // Tüm ekranları güncelle
+        function updateAllDisplays() {
+            document.getElementById('budget-display').textContent = Math.floor(budget).toLocaleString('tr-TR');
+            document.getElementById('capacity-display').textContent = getCurrentCapacity();
+            document.getElementById('turn-display').textContent = turn;
+            renderInvestmentCards();
+        }
+        
+        // Yatırım kartlarını oluştur / güncelle
+        function renderInvestmentCards() {
+            const grid = document.getElementById('investment-grid');
+            grid.innerHTML = '';
+            
+            Object.keys(factors).forEach(key => {
+                const f = factors[key];
+                const s = f.styles;
+                const progressWidth = Math.min(100, f.level * 10); // Her seviye %10 bar doldurur
+                
+                const cardHTML = `
+                <div class="card bg-slate-900 border border-white/10 rounded-3xl p-5 ${s.border}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-4xl">${f.icon}</div>
+                            <div>
+                                <h3 class="font-semibold text-lg leading-tight">${f.name}</h3>
+                                <p class="text-white/50 text-xs mt-1 h-8">${f.desc}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] font-medium text-white/40 tracking-wider">SEVİYE</div>
+                            <div class="text-3xl font-semibold ${s.text}">${f.level}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-5 mt-2">
+                        <div class="flex justify-between text-[10px] mb-1.5 font-medium">
+                            <span class="text-white/50">Gelişim Seviyesi</span>
+                            <span class="${s.text}">${f.level}/10</span>
+                        </div>
+                        <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div class="progress-bar h-full bg-gradient-to-r ${s.gradient} rounded-full" 
+                                 style="width: ${progressWidth}%"></div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="makeInvestment('${key}')" 
+                            class="w-full bg-white text-slate-900 ${s.hoverBg} hover:text-white font-semibold py-3 px-4 rounded-2xl flex items-center justify-between transition-all active:scale-95 group">
+                        <span class="text-sm">Geliştir</span>
+                        <span class="font-mono font-bold">${f.nextCost.toLocaleString('tr-TR')} <span class="text-[10px] font-sans font-normal opacity-70 group-hover:opacity-100">TL</span></span>
+                    </button>
+                </div>`;
+                
+                grid.innerHTML += cardHTML;
+            });
+        }
+        
+        // Log ekle
+        function addToLog(message) {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = `log-entry bg-slate-800/60 hover:bg-slate-800 border border-white/5 rounded-2xl p-3.5 text-sm leading-relaxed transition-colors`;
+            entry.innerHTML = `
+                <div class="flex gap-3">
+                    <span class="text-white/30 text-xs font-mono w-12 pt-0.5">${new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}</span>
+                    <span class="flex-1 text-white/90">${message}</span>
+                </div>
+            `;
+            container.appendChild(entry);
+            
+            // En alta kaydır
+            container.scrollTop = container.scrollHeight;
+            
+            // Maksimum 25 log tut
+            if (container.children.length > 25) {
+                container.removeChild(container.children[0]);
+            }
+        }
+        
+        // Log temizle
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '';
+            addToLog('📌 Günlük temizlendi. Simülasyon verileri akmaya devam ediyor...');
+        }
+        
+        // Simülasyonu başlat / durdur
+        function toggleSimulation() {
+            isRunning = !isRunning;
+            const pauseText = document.getElementById('pause-text');
+            
+            if (isRunning) {
+                pauseText.innerHTML = `⏸️ Durdur`;
+                addToLog('▶️ Simülasyon devam ettirildi.');
+            } else {
+                pauseText.innerHTML = `▶️ Devam Et`;
+                addToLog('⏹️ Simülasyon duraklatıldı.');
+            }
+        }
+        
+        // Oyunu sıfırla
+        function resetGame() {
+            if (!confirm('Tüm ilerlemeyi sıfırlamak istediğinizden emin misiniz?')) return;
+            
+            budget = 10000;
+            turn = 1;
+            
+            Object.keys(factors).forEach(key => {
+                factors[key].level = 0;
+                factors[key].nextCost = factors[key].nextCost === 2500 ? 2500 : (factors[key].nextCost === 1500 ? 1500 : (factors[key].nextCost === 3000 ? 3000 : (factors[key].nextCost === 1800 ? 1800 : 2000)));
+            });
+            
+            document.getElementById('log-container').innerHTML = '';
+            addToLog('🔄 Oyun sıfırlandı. 10.000 TL bütçe ile en baştan başlıyorsunuz.');
+            
+            updateAllDisplays();
+        }
+        
+        // Oyun başlatma
+        function startGame() {
+            initializeTailwind();
+            renderInvestmentCards();
+            
+            addToLog('🎮 Sistem Başlatıldı! Beşeri ve ekonomik faktörleri dengeleyerek şehrinizi kalkındırın.');
+            addToLog('💡 İPUCU: Sadece üretime (Teknoloji) odaklanmak yetmez; Ar-Ge ile ürün değerini, Sağlık ile iş gücünü, Turizm ile pasif geliri desteklemelisiniz.');
+            
+            simulationInterval = setInterval(() => {
+                simulateTurn();
+            }, 4000);
+            
+            console.log('%c✅ Gelişmiş Simülasyon Hazır!', 'color:#10b981; font-size:14px; font-weight:bold;');
+        }
+        
+        window.onload = startGame;
+    </script>
+</body>
+</html>
